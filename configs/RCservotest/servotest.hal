@@ -1,0 +1,44 @@
+##### RC Servo Test Configuration - servotest.hal #####
+
+loadrt threads name1=fast period1=50000 name2=slow period2=1000000 # fast period of
+    # 10000 gives 1 degree per period, or 1 degree resolution, but many PC's may
+    # crash with this setting. 20000 gives 2 degrees per fast period, or 2 degree resolution.
+
+loadrt hal_parport cfg="0xa000"  # Change as needed
+loadrt pwmgen output_type=0
+
+#loadusr -Wn mypanel pyvcp -g 250x500+800+0 -c mypanel mypanel.xml  # Sample from doc's
+loadusr -Wn servopyvcp pyvcp -g 700x80+50+50 -c servopyvcp servotest.xml
+
+# FUNCTIONS #########################################
+addf  parport.0.read       fast
+addf  pwmgen.update        slow
+addf  pwmgen.make-pulses   fast
+addf  parport.0.write      fast
+
+# CONNECTIONS #######################################
+setp  pwmgen.0.min-dc      0.06  #float rw, -90 degrees at .6 ms (center - .9ms),
+    # tries to keep the servo output shaft off of the hardware limit stop
+
+setp  pwmgen.0.max-dc      0.24  #float rw, 90 degrees at 2.4 ms, (center + .9ms),
+    # tries to keep the servo output shaft off of the hardware limit stop
+
+#setp  pwmgen.0.offset      0.15  #float rw, center position at 1.5ms
+setp  pwmgen.0.offset      0.153  #float rw, center position at 1.53ms, this line is
+    # tweaked but servo should be adjusted to center on 1.5ms
+
+#setp  pwmgen.0.scale    1000.00  #float rw
+setp  pwmgen.0.scale    1120.00  #float rw, tweaked a little for a particular servo
+setp  pwmgen.0.pwm-freq  100.00  #float rw, frequency can be changed as needed,
+    # but affects other parameters
+
+setp  pwmgen.0.enable TRUE  # could be connected to a pyVCP button
+
+net PWMcmd  servopyvcp.anaout-f  pwmgen.0.value        #float
+net PWMout  pwmgen.0.pwm         parport.0.pin-06-out  #bit
+
+#########################################
+# start real-time threads
+start
+# start HALscope
+loadusr halscope

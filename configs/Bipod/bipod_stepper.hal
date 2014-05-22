@@ -1,0 +1,114 @@
+# core HAL config file for steppers
+
+# first load the core RT modules that will be needed
+# kinematics
+loadrt bipodkins
+#setp bipodkins.Bx 1220
+#setp bipodkins.Bx 2597
+setp bipodkins.Bx 2400
+
+# motion controller, get name and thread periods from ini file
+loadrt [EMCMOT]EMCMOT base_period_nsec=[EMCMOT]BASE_PERIOD servo_period_nsec=[EMCMOT]SERVO_PERIOD traj_period_nsec=[EMCMOT]TRAJ_PERIOD key=[EMCMOT]SHMEM_KEY
+# stepper module, three step generators, all three using step/dir
+loadrt stepgen step_type=0,0,0
+loadrt ddt count=4
+loadrt hypot count=1
+
+# hook functions to base thread (high speed thread for step generation)
+addf stepgen.make-pulses base-thread
+
+# hook functions to servo thread
+addf stepgen.capture-position servo-thread
+addf motion-command-handler servo-thread
+addf motion-controller servo-thread
+addf stepgen.update-freq servo-thread
+
+addf ddt.0 servo-thread
+addf ddt.1 servo-thread
+addf ddt.2 servo-thread
+addf ddt.3 servo-thread
+addf hypot.0 servo-thread
+
+# connect position commands from motion module to step generator
+newsig Xpos float
+linksp Xpos <= axis.0.motor-pos-cmd
+linksp Xpos => stepgen.0.position-cmd
+newsig Ypos float
+linksp Ypos <= axis.1.motor-pos-cmd
+linksp Ypos => stepgen.1.position-cmd
+newsig Zpos float
+linksp Zpos <= axis.2.motor-pos-cmd
+linksp Zpos => stepgen.2.position-cmd
+
+# loop position commands back to motion module feedback
+linksp Xpos => axis.0.motor-pos-fb
+linksp Ypos => axis.1.motor-pos-fb
+linksp Zpos => axis.2.motor-pos-fb
+
+newsig Xvel float
+newsig Xacc float
+linksp Xpos => ddt.0.in
+linkps ddt.0.out => Xvel
+linksp Xvel => ddt.1.in
+linkps ddt.1.out => Xacc
+newsig Yvel float
+newsig Yacc float
+linksp Ypos => ddt.2.in
+linkps ddt.2.out => Yvel
+linksp Yvel => ddt.3.in
+linkps ddt.3.out => Yacc
+
+newsig XYvel float
+linksp Xvel => hypot.0.in0
+linksp Yvel => hypot.0.in1
+linksp XYvel <= hypot.0.out
+
+# connect enable signals for step generators
+newsig Xen bit
+linksp Xen <= axis.0.amp-enable-out
+linksp Xen => stepgen.0.enable
+newsig Yen bit
+linksp Yen <= axis.1.amp-enable-out
+linksp Yen => stepgen.1.enable
+newsig Zen bit
+linksp Zen <= axis.2.amp-enable-out
+linksp Zen => stepgen.2.enable
+
+# connect signals to step pulse generator outputs
+newsig Xstep bit
+newsig Xdir  bit
+newsig Ystep bit
+newsig Ydir  bit
+newsig Zstep bit
+newsig Zdir  bit
+linkps stepgen.0.step Xstep
+linkps stepgen.0.dir  Xdir
+linkps stepgen.1.step Ystep
+linkps stepgen.1.dir  Ydir
+linkps stepgen.2.step Zstep
+linkps stepgen.2.dir  Zdir
+
+# set stepgen module scaling - get values from ini file
+setp stepgen.0.position-scale [AXIS_0]INPUT_SCALE
+setp stepgen.0.steplen 3
+setp stepgen.0.stepspace 3
+setp stepgen.0.dirsetup 3
+setp stepgen.0.dirhold 3
+
+setp stepgen.1.position-scale [AXIS_1]INPUT_SCALE
+setp stepgen.1.steplen 3
+setp stepgen.1.stepspace 3
+setp stepgen.1.dirsetup 3
+setp stepgen.1.dirhold 3
+
+setp stepgen.2.position-scale [AXIS_2]INPUT_SCALE
+
+# set stepgen module velocity limits - get values from ini file
+setp stepgen.0.maxvel [AXIS_0]STEPGEN_MAXVEL
+setp stepgen.1.maxvel [AXIS_1]STEPGEN_MAXVEL
+setp stepgen.2.maxvel [AXIS_2]STEPGEN_MAXVEL
+
+# set stepgen module accel limits - get values from ini file
+setp stepgen.0.maxaccel [AXIS_0]STEPGEN_MAXACCEL
+setp stepgen.1.maxaccel [AXIS_1]STEPGEN_MAXACCEL
+setp stepgen.2.maxaccel [AXIS_2]STEPGEN_MAXACCEL

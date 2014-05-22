@@ -1,0 +1,19 @@
+<!-- servotest.xml -->
+
+<pyvcp>
+	<vbox>
+		<scale>
+			<font>("Helvetica",14)</font><width>"40"</width><halpin>"anaout"</halpin>
+			<resolution>0.1</resolution><orient>HORIZONTAL</orient>
+			<initval>0</initval><min_>-90</min_><max_>90</max_>
+		</scale>
+<!--	Commented out because scale works better
+		<dial>
+			<size>200</size><cpr>100</cpr><min_>-90</min_><max_>90</max_><text>"Dial"</text>
+			<initval>0</initval><resolution>0.1</resolution><halpin>"anaout"</halpin>
+    		<dialcolor>"yellow"</dialcolor><edgecolor>"green"</edgecolor><dotcolor>"black"</dotcolor>
+		</dial> -->
+	</vbox>
+</pyvcp>
+
+
